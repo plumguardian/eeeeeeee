@@ -346,7 +346,7 @@
         setProgress(interpolate(0, 1, loaded / total));
       };
     
-      // 2) Tell storage to pull every asset
+      // 2) Tell storage to pull every asset from ./assets/…
       storage.addWebStore(
         [
           storage.AssetType.ImageVector,
@@ -354,12 +354,12 @@
           storage.AssetType.Sound,
           storage.AssetType.Font
         ],
-        asset => `${asset.assetId}.${asset.dataFormat}`
+        asset => `assets/${asset.assetId}.${asset.dataFormat}`
       );
     
       // 3) Load project.json off disk
       const getProjectData = () =>
-        fetch('project.json')
+        fetch('assets/project.json')
           .then(response => {
             if (!response.ok) throw new Error('Could not load project.json');
             return response.arrayBuffer();
