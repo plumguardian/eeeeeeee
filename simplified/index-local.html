@@ -148,6 +148,8 @@
   
 </head>
 <body>
+  <input id="picker" type="file" webkitdirectory multiple style="display:none">
+  
   <div id="app"></div>
 
   <div id="launch" class="screen" hidden title="Click to start">
@@ -338,65 +340,58 @@
       handleError(e);
     }
   </script>
-    <script>
-      const storage = scaffolding.storage;
-      storage.onprogress = (total, loaded) => {
-        setProgress(interpolate(0, 1, loaded/total));
-      };
-
-      storage.addWebStore(
-        [
-          storage.AssetType.ImageVector,
-          storage.AssetType.ImageBitmap,
-          storage.AssetType.Sound,
-          storage.AssetType.Font
-        ],
-        asset => `assets/${asset.assetId}.${asset.dataFormat}`
-      );
-
-      const getProjectData = async () => {
-        // 1) Print out what URL we're actually trying to load
-        const projectURL = new URL('assets/project.json', location).href;
-        console.log('🔍 loading project.json from:', projectURL);
-
-        try {
-          // 2) Try a HEAD first so we can see status
-          let head = await fetch(projectURL, { method: 'HEAD' });
-          console.log('HEAD status:', head.status, head.statusText);
-
-          // 3) Now fetch the data
-          let res = await fetch(projectURL);
-          console.log('GET  status:', res.status, res.statusText);
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          }
-          return await res.arrayBuffer();
-        } catch (err) {
-          console.error('❌ getProjectData failed:', err);
-          // show an alert so you can see it on-device
-          alert('Error loading project.json:\n' + err.message);
-          throw err;
-        }
-      };
-    </script>
   <script>
-    const run = async () => {
-      const projectData = await getProjectData();
-      await scaffolding.loadProject(projectData);
-      setProgress(1);
-      loadingScreen.hidden = true;
-      if (true) {
-        scaffolding.start();
-      } else {
-        launchScreen.hidden = false;
-        launchScreen.addEventListener('click', () => {
-          launchScreen.hidden = true;
-          scaffolding.start();
-        });
-        launchScreen.focus();
-      }
+    // —————————————————————————————
+    // 1) Set up storage exactly as before
+    // —————————————————————————————
+    const storage = scaffolding.storage;
+    storage.onprogress = (total, loaded) => {
+      // map to 0→1
+      setProgress(interpolate(0, 1, loaded / total));
     };
-    run().catch(handleError);
+    storage.addWebStore(
+      [
+        storage.AssetType.ImageVector,
+        storage.AssetType.ImageBitmap,
+        storage.AssetType.Sound,
+        storage.AssetType.Font
+      ],
+      asset => `assets/${asset.assetId}.${asset.dataFormat}`
+    );
+
+    // —————————————————————————————
+    // 2) Trigger the folder picker immediately
+    // —————————————————————————————
+    const picker = document.getElementById('picker');
+    picker.click();
+
+    // —————————————————————————————
+    // 3) When the user selects the folder…
+    // —————————————————————————————
+    picker.addEventListener('change', async e => {
+      // grab all File objects
+      const files = Array.from(e.target.files);
+
+      // find & load project.json
+      const projFile = files.find(f =>
+        f.webkitRelativePath.endsWith('project.json')
+      );
+      if (!projFile) {
+        alert('Could not find project.json in that folder.');
+        return;
+      }
+      const projectData = await projFile.arrayBuffer();
+
+      // hide the loading screen, show launch (or skip straight to start)
+      setProgress(1);
+      document.getElementById('loadingScreen').hidden = true;
+
+      // —————————————————————————————
+      // 4) Load the project & start
+      // —————————————————————————————
+      await scaffolding.loadProject(projectData);
+      scaffolding.start();
+    });
   </script>
 </body>
 </html>
