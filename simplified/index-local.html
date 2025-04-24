@@ -339,14 +339,11 @@
     }
   </script>
     <script>
-      // 1) Hook up progress reporting
       const storage = scaffolding.storage;
       storage.onprogress = (total, loaded) => {
-        // map 0→1
-        setProgress(interpolate(0, 1, loaded / total));
+        setProgress(interpolate(0, 1, loaded/total));
       };
-    
-      // 2) Tell storage to pull every asset from ./assets/…
+
       storage.addWebStore(
         [
           storage.AssetType.ImageVector,
@@ -356,14 +353,31 @@
         ],
         asset => `assets/${asset.assetId}.${asset.dataFormat}`
       );
-    
-      // 3) Load project.json off disk
-      const getProjectData = () =>
-        fetch('assets/project.json')
-          .then(response => {
-            if (!response.ok) throw new Error('Could not load project.json');
-            return response.arrayBuffer();
-          });
+
+      const getProjectData = async () => {
+        // 1) Print out what URL we're actually trying to load
+        const projectURL = new URL('assets/project.json', location).href;
+        console.log('🔍 loading project.json from:', projectURL);
+
+        try {
+          // 2) Try a HEAD first so we can see status
+          let head = await fetch(projectURL, { method: 'HEAD' });
+          console.log('HEAD status:', head.status, head.statusText);
+
+          // 3) Now fetch the data
+          let res = await fetch(projectURL);
+          console.log('GET  status:', res.status, res.statusText);
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          return await res.arrayBuffer();
+        } catch (err) {
+          console.error('❌ getProjectData failed:', err);
+          // show an alert so you can see it on-device
+          alert('Error loading project.json:\n' + err.message);
+          throw err;
+        }
+      };
     </script>
   <script>
     const run = async () => {
