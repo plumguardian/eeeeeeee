@@ -357,6 +357,7 @@
   async function run() {
     console.log('Loading project.json');
     const res = await fetch('./assets/project.json');
+    console.log('Loaded project.json');
     if (!res.ok) console.log('Could not load project.json');
     if (!res.ok) throw new Error('Could not load project.json');
     const data = await res.arrayBuffer();
