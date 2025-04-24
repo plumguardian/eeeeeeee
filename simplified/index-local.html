@@ -177,7 +177,7 @@
     </details>
   </div>
 
-  <script src="script.js"></script>
+  <script src="./script.js"></script>
   <script>
     const appElement = document.getElementById('app');
     const launchScreen = document.getElementById('launch');
@@ -340,58 +340,29 @@
       handleError(e);
     }
   </script>
-  <script>
-    // —————————————————————————————
-    // 1) Set up storage exactly as before
-    // —————————————————————————————
-    const storage = scaffolding.storage;
-    storage.onprogress = (total, loaded) => {
-      // map to 0→1
-      setProgress(interpolate(0, 1, loaded / total));
-    };
-    storage.addWebStore(
-      [
-        storage.AssetType.ImageVector,
-        storage.AssetType.ImageBitmap,
-        storage.AssetType.Sound,
-        storage.AssetType.Font
-      ],
-      asset => `assets/${asset.assetId}.${asset.dataFormat}`
-    );
+<script>
+  const storage = scaffolding.storage;
+  storage.onprogress = (t,l) => setProgress(interpolate(0,1,l/t));
+  storage.addWebStore(
+    [
+      storage.AssetType.ImageVector,
+      storage.AssetType.ImageBitmap,
+      storage.AssetType.Sound,
+      storage.AssetType.Font
+    ],
+    asset => `./assets/${asset.assetId}.${asset.dataFormat}`
+  );
 
-    // —————————————————————————————
-    // 2) Trigger the folder picker immediately
-    // —————————————————————————————
-    const picker = document.getElementById('picker');
-    picker.click();
-
-    // —————————————————————————————
-    // 3) When the user selects the folder…
-    // —————————————————————————————
-    picker.addEventListener('change', async e => {
-      // grab all File objects
-      const files = Array.from(e.target.files);
-
-      // find & load project.json
-      const projFile = files.find(f =>
-        f.webkitRelativePath.endsWith('project.json')
-      );
-      if (!projFile) {
-        alert('Could not find project.json in that folder.');
-        return;
-      }
-      const projectData = await projFile.arrayBuffer();
-
-      // hide the loading screen, show launch (or skip straight to start)
-      setProgress(1);
-      document.getElementById('loadingScreen').hidden = true;
-
-      // —————————————————————————————
-      // 4) Load the project & start
-      // —————————————————————————————
-      await scaffolding.loadProject(projectData);
-      scaffolding.start();
-    });
-  </script>
+  // load project.json
+  async function run() {
+    const res = await fetch('./assets/project.json');
+    if (!res.ok) throw new Error('Could not load project.json');
+    const data = await res.arrayBuffer();
+    await scaffolding.loadProject(data);
+    setProgress(1);
+    scaffolding.start();
+  }
+  run().catch(handleError);
+</script>
 </body>
 </html>
